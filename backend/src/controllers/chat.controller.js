@@ -147,21 +147,26 @@ const renameGroup = asyncHandler(async (req, res) => {
     }
 });
 
-const addToGroup=asyncHandler(async(req,res)=>{
-    const{chatId,userId}=req.body
+const addToGroup = asyncHandler(async(req, res) => {
+    const { chatId, userId } = req.body;
 
-    const added=await Chat.findByIdAndUpdate(chatId,{$push:{userId}},{new:true})
-    .populate("users","-password -refreshToken")
-    .populate("groupAdmin",'-password -refreshToken')
+    // 🔥 FIX: $push ke andar "users: userId" karna hai
+    const added = await Chat.findByIdAndUpdate(
+        chatId,
+        { $push: { users: userId } }, 
+        { new: true }
+    )
+    .populate("users", "-password -refreshToken")
+    .populate("groupAdmin", '-password -refreshToken');
 
     if(!added){
         throw new ApiError(404,"chat not found")
-    }else{
+    } else {
         return res.status(200).json(
             new ApiResponse(200, added, "User added to the group")
         );
     }
-})
+});
 
 const removeFromGroup = asyncHandler(async (req, res) => {
     const { chatId, userId } = req.body;

@@ -153,5 +153,76 @@ const markMessagesAsRead = asyncHandler(async (req, res) => {
     );
 });
 
-export {sendMessage,allMessages,deleteMessage,markMessagesAsRead}
+// Upar yeh import zaroor check kar lena, kyunki hum Chat ko update kar rahe hain
+// import { Chat } from "../models/chat.model.js";
+
+const togglePinMessage = asyncHandler(async (req, res) => {
+    const { messageId } = req.params;
+
+
+    const message = await Message.findById(messageId);
+
+    if (!message) {
+        throw new ApiError(404, "Message not found");
+    }
+    const chat = await Chat.findById(message.chat);
+
+    if (!chat) {
+        throw new ApiError(404, "Chat not found");
+    }
+    let responseText = "";
+
+    if (chat.pinnedMessage?.toString() === messageId.toString()) {
+        chat.pinnedMessage = null;
+        responseText = "Message unpinned successfully 📍";
+    } else {
+
+        chat.pinnedMessage = messageId;
+        responseText = "Message pinned successfully 📌";
+    }
+
+    await chat.save();
+
+    const updatedChat = await Chat.findById(chat._id).populate("pinnedMessage");
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedChat, responseText)
+    );
+});
+
+const editMessage=asyncHandler(async(req,res)=>{
+    const {messageId}=req.params;
+    const {content}=req.body;
+
+    if(!content || content.trim===""){
+        throw new ApiError(400,"New content is required")
+    }
+
+    const message=await Message.findById(messageId)
+
+    if(!message){
+        throw new ApiError(404,"Message is not found");
+    }
+
+    if(req.user._id.toString() !==message.sender.toString()){
+        throw new ApiError(403,"Unautorized access")
+    }
+
+    if(message.isDeleted){
+        throw new ApiError(400,"Cannot edit a deleted message")
+    }
+
+    message.content=content;
+    message.isEdited=true;
+
+    await message.save();
+
+    const updatedMessage=await Message.findById(messageId).populate("sender","username avatar").populate("chat")
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedMessage, "Message edited successfully ✏️")
+    );
+})
+
+export {sendMessage,allMessages,deleteMessage,markMessagesAsRead,togglePinMessage,editMessage}
 

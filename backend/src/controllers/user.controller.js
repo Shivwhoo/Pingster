@@ -282,6 +282,36 @@ const getAllUsers = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, users, "Users fetched successfully"));
 });
 
+// backend/controllers/user.controller.js
+
+const removeUserAvatar = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user?._id);
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    const avatarOldUrl = user.avatar;
+
+    // 🔥 Fix: Sirf tabhi delete call karo jab URL waqai exist karta ho
+    if (avatarOldUrl && avatarOldUrl.trim() !== "") {
+        try {
+            await deleteFromCloudinary(avatarOldUrl);
+        } catch (error) {
+            console.log("Cloudinary Delete Failed (Skipping...):", error.message);
+            // Hum process nahi rokenge, DB toh clear hona hi chahiye
+        }
+    }
+
+    user.avatar = ""; 
+    await user.save({ validateBeforeSave: false });
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, user, "Avatar removed successfully"));
+});
+
+
 export {
   registerUser,
   loginUser,
@@ -292,4 +322,5 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   getAllUsers,
+  removeUserAvatar
 };

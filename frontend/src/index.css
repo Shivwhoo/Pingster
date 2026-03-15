@@ -1,1 +1,91 @@
 @import "tailwindcss";
+
+/* fonts */
+
+:root{
+  --font-sans: "Inter", sans-serif;
+  --font-display: "Sora", sans-serif;
+}
+
+
+/* base styles */
+
+body{
+  @apply bg-[#050507] text-gray-200;
+  font-family: var(--font-sans);
+}
+
+
+/* logo */
+
+.logo{
+  font-family: var(--font-display);
+  @apply text-4xl font-semibold tracking-wider text-center;
+}
+
+
+/* subtitle */
+
+.subtitle{
+  @apply text-xs text-gray-400 tracking-[0.3em] text-center mt-2;
+}
+
+
+/* card */
+
+.auth-card{
+  @apply w-[420px] mx-auto p-10 rounded-2xl
+  bg-[#0c0c0f]/90
+  border border-white/10
+  shadow-[0_20px_80px_rgba(0,0,0,0.7)];
+}
+
+
+/* inputs */
+
+.input{
+  @apply w-full px-4 py-3 rounded-lg
+  bg-[#0b0b0f]
+  border border-white/10
+  focus:border-purple-500
+  focus:ring-1 focus:ring-purple-500
+  outline-none;
+}
+
+
+/* button */
+
+.button{
+  font-family: var(--font-display);
+
+  @apply w-full py-3 rounded-lg
+  font-semibold tracking-wide
+  bg-gradient-to-r from-purple-600 to-purple-500
+  hover:from-purple-500 hover:to-purple-400
+  transition;
+}
+
+
+/* 🔥 Pingster Custom Stealth Scrollbar 🔥 */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px; /* Ekdum patla aur sleek */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent; /* Track invisible rahega */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #1a1a1a; /* Dark gray color normal state me */
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #b026ff; /* Hover karne par Neon Purple glow */
+}
+
+/* Firefox ke liye fallback */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #1a1a1a transparent;
+}

@@ -32,6 +32,30 @@ io.on("connection", (socket) => {
         console.log("👥 User joined Chat Room: " + room);
     });
 
+    socket.on("typing",(room)=>socket.in(room).emit("typing"))
+    socket.on("stop typing",(room)=>socket.in(room).emit("stop typing"))
+
+    socket.on("message deleted",(deletedMessageInfo)=>{
+        var chat=deletedMessageInfo.chat;
+        if(!chat.users) return console.log("⚠️ chat.users not defined in deleted message");
+
+        chat.users.forEach((user)=>{
+            if(user._id === deletedMessageInfo.sender._id) return
+
+            socket.in(user._id).emit("message deleted",deletedMessageInfo)
+        })
+    })
+
+    socket.on("message edited",(editedMessageInfo)=>{
+        var chat=editedMessageInfo.chat;
+        if(!chat.users) return console.log("⚠️ chat.users not defined in edited message");
+
+        chat.users.forEach((user)=>{
+            if(user._id === editedMessageInfo.sender._id) return
+            socket.in(user._id).emit("message edited",editedMessageInfo)
+        })
+    })
+
     // 3. NEW MESSAGE (Live Message Bhejna): 
     socket.on("new message", (newMessageReceived) => {
         var chat = newMessageReceived.chat;
