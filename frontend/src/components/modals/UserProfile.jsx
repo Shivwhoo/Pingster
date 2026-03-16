@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, X, Camera, Lock, Loader2, Check, Shield } from "lucide-react";
+import { User, X, Camera, Lock, Loader2, Check, Shield, Trash2 } from "lucide-react"; // 🔥 Trash2 added
 import api from "../../config/api";
 // Agar Redux me user update karne ka action hai, toh usko import karlena
 // import { updateCredentials } from '../../redux/slices/authSlice';
@@ -25,8 +25,29 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar);
   const [isAvatarUpdating, setIsAvatarUpdating] = useState(false);
+  
+  // 🔥 NAYI STATE: Avatar Remove ke liye
+  const [isAvatarRemoving, setIsAvatarRemoving] = useState(false);
 
   if (!currentUser) return null;
+
+  // 🔥 NAYA FUNCTION: Avatar hatane ke liye
+  const removeAvatar = async () => {
+    if (!window.confirm("Purge Identity Avatar?")) return;
+    try {
+      setIsAvatarRemoving(true);
+      // Backend route verify karlena (e.g., api.delete('/users/avatar'))
+      await api.delete("/users/avatar"); 
+      setAvatarPreview("");
+      setAvatarFile(null);
+      alert("Avatar purged successfully! (Syncing with Matrix...)");
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.message || "Failed to purge avatar.");
+    } finally {
+      setIsAvatarRemoving(false);
+    }
+  };
 
   // 1. Avatar Update Logic
   const handleAvatarChange = (e) => {
@@ -124,7 +145,6 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
             </div>
 
             <div className="p-6 space-y-8">
-              {/* --- AVATAR SECTION --- */}
               {/* --- AVATAR SECTION --- */}
               <div className="flex flex-col items-center space-y-4">
                 <div className="relative group">

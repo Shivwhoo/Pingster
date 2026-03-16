@@ -18,6 +18,9 @@ const Sidebar = ({
   getChatAvatar,
   getChatName,
   openProfile,
+  onlineUsers,
+  notifications,
+  setNotifications
 }) => {
   return (
     <div className="w-full md:w-[350px] lg:w-[400px] h-full flex flex-col border-r border-white/10 bg-[#0a0a0a] relative z-20 shrink-0">
@@ -108,35 +111,46 @@ const Sidebar = ({
                 </p>
               </div>
             ) : (
-              searchResults.map((user) => (
-                <div
-                  key={user._id}
-                  onClick={() => accessChat(user._id)}
-                  className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 border border-white/5 hover:bg-[#b026ff]/10 hover:border-[#b026ff]/30 group"
-                >
-                  <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-black/50 shrink-0">
-                    <img
-                      src={
-                        user.avatar ||
-                        `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username || "user"}`
-                      }
-                      alt="avatar"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0 flex justify-between items-center">
-                    <div className="flex flex-col">
-                      <h4 className="text-xs font-bold text-gray-200 truncate tracking-wide">
-                        {user.username || user.name}
-                      </h4>
-                      <span className="text-[9px] text-gray-500 font-mono truncate">
-                        {user.email}
-                      </span>
+              searchResults.map((user) => {
+                const isOnline = (onlineUsers || []).some(id => String(id) === String(user._id)); // 🔥 Strict Type Fix
+
+                return (
+                  <div
+                    key={user._id}
+                    onClick={() => accessChat(user._id)}
+                    className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 border border-white/5 hover:bg-[#b026ff]/10 hover:border-[#b026ff]/30 group"
+                  >
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-black/50">
+                        <img
+                          src={
+                            user.avatar ||
+                            `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username || "user"}`
+                          }
+                          alt="avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      {/* 🔥 RADAR ONLINE DOT 🔥 */}
+                      {isOnline && (
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#39ff14] border-2 border-[#0a0a0a] rounded-full shadow-[0_0_8px_rgba(57,255,20,0.8)] z-10"></div>
+                      )}
                     </div>
-                    <UserPlus className="w-4 h-4 text-gray-600 group-hover:text-[#b026ff] transition-colors" />
+
+                    <div className="flex-1 min-w-0 flex justify-between items-center">
+                      <div className="flex flex-col">
+                        <h4 className="text-xs font-bold text-gray-200 truncate tracking-wide">
+                          {user.username || user.name}
+                        </h4>
+                        <span className="text-[9px] text-gray-500 font-mono truncate">
+                          {user.email}
+                        </span>
+                      </div>
+                      <UserPlus className="w-4 h-4 text-gray-600 group-hover:text-[#b026ff] transition-colors" />
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </>
         ) : (
@@ -168,33 +182,62 @@ const Sidebar = ({
                 </p>
               </div>
             ) : (
-              chats.map((chat) => (
-                <div
-                  key={chat._id}
-                  onClick={() => setActiveChat(chat)}
-                  className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 border border-transparent ${activeChat?._id === chat._id ? "bg-[#b026ff]/10 border-[#b026ff]/30 shadow-[inset_4px_0_0_#b026ff]" : "hover:bg-white/5 hover:border-white/10"}`}
-                >
-                  <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-black/50 shrink-0">
-                    <img
-                      src={getChatAvatar(chat)}
-                      alt="avatar"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-1">
-                      <h4 className="text-xs font-bold text-gray-200 truncate tracking-wide">
-                        {getChatName(chat)}
-                      </h4>
+              chats.map((chat) => {
+                // 🔥 CHAT LIST ONLINE CHECK 🔥
+                const otherUser = chat.users?.find((u) => u._id !== currentUser?._id);
+                const isOnline = otherUser ? (onlineUsers || []).some(id => String(id) === String(otherUser._id)) : false;
+                
+                // 🔥 UNREAD NOTIFICATION LOGIC 🔥
+                const unreadCount = notifications.filter((n) => n.chat._id === chat._id).length;
+
+                return (
+                  <div
+                    key={chat._id}
+                    onClick={() => {
+                      setActiveChat(chat);
+                      // 🔥 NAYA: Jab chat khulegi, toh uski notifications gayab ho jayengi
+                      setNotifications(notifications.filter((n) => n.chat._id !== chat._id));
+                    }}
+                    className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 border border-transparent ${activeChat?._id === chat._id ? "bg-[#b026ff]/10 border-[#b026ff]/30 shadow-[inset_4px_0_0_#b026ff]" : "hover:bg-white/5 hover:border-white/10"}`}
+                  >
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-black/50">
+                        <img
+                          src={getChatAvatar(chat)}
+                          alt="avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      {/* 🔥 THE CHAT ONLINE GREEN DOT 🔥 */}
+                      {!chat.isGroupChat && isOnline && (
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#39ff14] border-2 border-[#0a0a0a] rounded-full shadow-[0_0_8px_rgba(57,255,20,0.8)] z-10"></div>
+                      )}
                     </div>
-                    <p className="text-[10px] text-gray-500 truncate font-mono">
-                      {chat.latestMessage
-                        ? chat.latestMessage.content
-                        : "Secure channel established."}
-                    </p>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-1">
+                        <h4 className={`text-xs font-bold truncate tracking-wide ${unreadCount > 0 ? "text-[#b026ff]" : "text-gray-200"}`}>
+                          {getChatName(chat)}
+                        </h4>
+
+                        {/* 🔥 THE GLOWING UNREAD BADGE 🔥 */}
+                        {unreadCount > 0 && (
+                          <div className="bg-[#b026ff] text-black text-[9px] font-bold px-1.5 py-0.5 rounded-md animate-pulse shadow-[0_0_10px_rgba(176,38,255,0.6)]">
+                            {unreadCount > 9 ? "9+" : unreadCount} NEW
+                          </div>
+                        )}
+                      </div>
+                      
+                      <p className={`text-[10px] truncate font-mono ${unreadCount > 0 ? "text-white font-bold" : "text-gray-500"}`}>
+                        {unreadCount > 0 
+                          ? "Incoming transmission..." 
+                          : (chat.latestMessage ? chat.latestMessage.content || "Attachment Received" : "Secure channel established.")}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </>
         )}

@@ -84,7 +84,31 @@ body{
   background: #b026ff; /* Hover karne par Neon Purple glow */
 }
 
+
 /* Firefox ke liye fallback */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #1a1a1a transparent;
+}
+/* 🔥 Pingster Custom Stealth Scrollbar 🔥 */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px; /* Ekdum patla aur sleek */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #1a1a1a; 
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #b026ff; /* Hover par Neon Purple */
+}
+
+/* Firefox Support */
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #1a1a1a transparent;
