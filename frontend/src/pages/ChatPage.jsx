@@ -22,39 +22,39 @@ const ChatPage = () => {
     userInfo?.user ||
     userInfo?.loggedInUser ||
     userInfo?.data?.user ||
-    userInfo; 
+    userInfo;
 
   // --- CORE STATES ---
   const [chats, setChats] = useState([]);
   const [isChatsLoading, setIsChatsLoading] = useState(true);
-  const [activeChat, setActiveChat] = useState(null); 
+  const [activeChat, setActiveChat] = useState(null);
 
   // --- MESSAGE STATES ---
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [isMessagesLoading, setIsMessagesLoading] = useState(false); 
+  const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
   // --- RADAR STATES ---
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false); 
+  const [isSearching, setIsSearching] = useState(false);
 
   // --- SOCKET & TYPING STATES ---
   const socket = useRef(null);
   const [socketConnected, setSocketConnected] = useState(false);
   const [typing, setTyping] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const typingTimeoutRef = useRef(null); 
+  const typingTimeoutRef = useRef(null);
 
-  // --- GROUP CREATION STATES ---
-  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false); 
+  // --- GROUP CREATION & MODAL STATES ---
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [isChatInfoModalOpen, setIsChatInfoModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  
+
   const [editingMessage, setEditingMessage] = useState(null);
-  const [selectedFiles, setSelectedFiles] = useState([]); 
-  const [onlineUsers, setOnlineUsers] = useState([]); 
-  const [notifications, setNotifications] = useState([]); 
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [notifications, setNotifications] = useState([]);
 
   const messagesEndRef = useRef(null);
   const scrollToBottom = () =>
@@ -62,7 +62,7 @@ const ChatPage = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]); 
+  }, [messages, isTyping]);
 
   // --- 1. SOCKET BOOTUP ---
   useEffect(() => {
@@ -70,15 +70,22 @@ const ChatPage = () => {
       socket.current = io(ENDPOINT);
       socket.current.emit("setup", currentUser);
       socket.current.on("connected", () => setSocketConnected(true));
-      
-      // 🔥 YAHAN SE PURANE TYPING LISTENERS HATA DIYE GAYE HAIN 🔥
 
       socket.current.on("get-online-users", (users) => {
         setOnlineUsers(users);
       });
-      
+
+      // 🔥 NAYA: Real-time Edit/Delete sync form other users 🔥
+      socket.current.on("message deleted", (deletedMsg) => {
+        setMessages((prev) => prev.filter((m) => m._id !== deletedMsg._id));
+      });
+
+      socket.current.on("message edited", (editedMsg) => {
+        setMessages((prev) => prev.map((m) => m._id === editedMsg._id ? editedMsg : m));
+      });
+
       socket.current.on("messages read", ({ chatId, userId }) => {
-        setMessages((prevMessages) => 
+        setMessages((prevMessages) =>
           prevMessages.map((msg) => {
             if (msg.sender._id === currentUser._id) {
               const currentReaders = msg.readBy || [];
@@ -87,21 +94,20 @@ const ChatPage = () => {
               }
             }
             return msg;
-          })
+          }),
         );
       });
     }
     return () => {
       if (socket.current) socket.current.disconnect();
     };
-  }, [currentUser]); 
+  }, [currentUser]);
 
-  // 🔥 NAYA: SMART TYPING TRACKER 🔥
+  // --- SMART TYPING TRACKER ---
   useEffect(() => {
     if (!socket.current) return;
 
     const handleTyping = (room) => {
-      // Sirf tab true karo jab backend se aayi hui room ID tumhari current chat se match ho
       if (activeChat && activeChat._id === room) {
         setIsTyping(true);
       }
@@ -136,7 +142,7 @@ const ChatPage = () => {
       }
     };
     if (currentUser) fetchMyChats();
-  }, [currentUser]); 
+  }, [currentUser]);
 
   // --- 3. FETCH MESSAGES ---
   useEffect(() => {
@@ -148,8 +154,11 @@ const ChatPage = () => {
         setMessages(data?.data || data || []);
         if (socket.current) socket.current.emit("join chat", activeChat._id);
 
-        await api.put(`/messages/${activeChat._id}/read`); 
-        socket.current.emit("mark as read", { chatId: activeChat._id, userId: currentUser._id });
+        await api.put(`/messages/${activeChat._id}/read`);
+        socket.current.emit("mark as read", {
+          chatId: activeChat._id,
+          userId: currentUser._id,
+        });
       } catch (error) {
         console.error("Failed to fetch messages");
       } finally {
@@ -157,28 +166,50 @@ const ChatPage = () => {
       }
     };
     fetchMessages();
-  }, [activeChat]); 
+  }, [activeChat]);
 
   // --- 4. REAL-TIME LISTENER ---
   useEffect(() => {
     if (!socket.current) return;
-    const messageHandler = async (newMessageReceived) => { 
+    const messageHandler = async (newMessageReceived) => {
+      
+      // Part A: Notification & Messages logic
       if (!activeChat || activeChat._id !== newMessageReceived.chat._id) {
-        const audio = new Audio("https://cdn.pixabay.com/download/audio/2021/08/09/audio_82e21b0231.mp3"); 
-        audio.play().catch(e => console.log("Audio play blocked by browser:", e));
+        const audio = new Audio("https://cdn.pixabay.com/download/audio/2021/08/09/audio_82e21b0231.mp3");
+        audio.play().catch((e) => console.log("Audio play blocked by browser:", e));
         setNotifications((prev) => [newMessageReceived, ...prev]);
-        console.log("New Message Alert:", newMessageReceived);
       } else {
         setMessages((prev) => [...prev, newMessageReceived]);
         try {
           await api.put(`/messages/${activeChat._id}/read`);
-          socket.current.emit("mark as read", { chatId: activeChat._id, userId: currentUser._id });
-        } catch(err) { console.error(err); }
+          socket.current.emit("mark as read", {
+            chatId: activeChat._id,
+            userId: currentUser._id,
+          });
+        } catch (err) { console.error(err); }
       }
+
+      // 🔥 Part B: NAYA LOGIC - Update Sidebar Chats Dynamically 🔥
+      setChats((prevChats) => {
+        const chatExists = prevChats.some(c => c._id === newMessageReceived.chat._id);
+        if (chatExists) {
+          // Chat ko update karo aur top par laao
+          let updatedChats = prevChats.map(c => 
+            c._id === newMessageReceived.chat._id ? { ...c, latestMessage: newMessageReceived } : c
+          );
+          const chatToMove = updatedChats.find(c => c._id === newMessageReceived.chat._id);
+          updatedChats = updatedChats.filter(c => c._id !== newMessageReceived.chat._id);
+          return [chatToMove, ...updatedChats];
+        } else {
+          // Agar naya chat create hua hai to list me daalo
+          return [newMessageReceived.chat, ...prevChats];
+        }
+      });
     };
+
     socket.current.on("message received", messageHandler);
     return () => socket.current.off("message received", messageHandler);
-  }, [activeChat, notifications]); 
+  }, [activeChat]); 
 
   // --- 5. TYPING HANDLER ---
   const typingHandler = (e) => {
@@ -193,12 +224,12 @@ const ChatPage = () => {
       socket.current.emit("stop typing", activeChat._id);
       setTyping(false);
     }, 3000);
-  }; 
+  };
 
   // --- 6. SEND MESSAGE ---
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() && selectedFiles.length === 0) return; 
+    if (!newMessage.trim() && selectedFiles.length === 0) return;
 
     socket.current.emit("stop typing", activeChat._id);
     setTyping(false);
@@ -206,9 +237,14 @@ const ChatPage = () => {
     try {
       if (editingMessage) {
         const { data } = await api.put(`/messages/${editingMessage._id}`, {
-          content: newMessage
+          content: newMessage,
         });
-        setMessages(messages.map(m => m._id === editingMessage._id ? data.data : m));
+        const updatedMsg = data.data || data; // Extract updated message
+        setMessages(messages.map((m) => (m._id === editingMessage._id ? updatedMsg : m)));
+        
+        // 🔥 NAYA: Emit Edit to other user
+        if (socket.current) socket.current.emit("message edited", updatedMsg);
+        
         setEditingMessage(null);
         setNewMessage("");
       } else {
@@ -219,11 +255,10 @@ const ChatPage = () => {
           dataToSend = new FormData();
           dataToSend.append("chatId", activeChat._id);
           if (newMessage.trim()) dataToSend.append("content", newMessage);
-          
-          selectedFiles.forEach(file => {
-            dataToSend.append("attachments", file); 
+
+          selectedFiles.forEach((file) => {
+            dataToSend.append("attachments", file);
           });
-          
           headers = { "Content-Type": "multipart/form-data" };
         } else {
           dataToSend = { content: newMessage, chatId: activeChat._id };
@@ -231,17 +266,25 @@ const ChatPage = () => {
 
         const { data } = await api.post("/messages", dataToSend, { headers });
         const sentMsg = data?.data || data;
-        
+
         setNewMessage("");
-        setSelectedFiles([]); 
+        setSelectedFiles([]);
         setMessages((prev) => [...prev, sentMsg]);
         if (socket.current) socket.current.emit("new message", sentMsg);
+
+        // Sidebar update after sending
+        setChats((prev) => {
+          let updatedChats = prev.map(c => c._id === activeChat._id ? { ...c, latestMessage: sentMsg } : c);
+          const movedChat = updatedChats.find(c => c._id === activeChat._id);
+          updatedChats = updatedChats.filter(c => c._id !== activeChat._id);
+          return [movedChat, ...updatedChats];
+        });
       }
     } catch (error) {
       console.error("Transmission failed", error);
       alert("Payload delivery failed. Check network.");
     }
-  }; 
+  };
 
   // --- RADAR & 1-ON-1 CHAT HELPERS ---
   const handleSearch = async (query) => {
@@ -273,13 +316,12 @@ const ChatPage = () => {
     } finally {
       setIsChatsLoading(false);
     }
-  }; 
+  };
 
   const openChatInfo = () => {
     setIsChatInfoModalOpen(true);
-  }; 
+  };
 
-  // --- HELPERS ---
   const handleLogout = () => {
     dispatch(logout());
     navigate("/login");
@@ -313,8 +355,14 @@ const ChatPage = () => {
   const handleDeleteMessage = async (messageId) => {
     if (!window.confirm("Purge this payload permanently?")) return;
     try {
+      const msgToDelete = messages.find(m => m._id === messageId); 
       await api.delete(`/messages/${messageId}`);
+      
       setMessages(messages.filter((m) => m._id !== messageId));
+      
+      if (socket.current && msgToDelete) {
+        socket.current.emit("message deleted", msgToDelete);
+      }
     } catch (error) {
       alert("Purge failed!");
     }
@@ -322,57 +370,68 @@ const ChatPage = () => {
 
   const handleEditClick = (message) => {
     setEditingMessage(message);
-    setNewMessage(message.content); 
+    setNewMessage(message.content);
   };
 
   return (
-    <div className="h-[100dvh] w-full bg-[#050505] text-[#e0e0e0] font-mono overflow-hidden flex selection:bg-[#b026ff]/30 relative">
-      <Sidebar
-        currentUser={currentUser}
-        socketConnected={socketConnected}
-        handleLogout={handleLogout}
-        searchQuery={searchQuery}
-        handleSearch={handleSearch}
-        setSearchQuery={setSearchQuery}
-        isSearching={isSearching}
-        searchResults={searchResults}
-        accessChat={accessChat}
-        setIsGroupModalOpen={setIsGroupModalOpen}
-        isChatsLoading={isChatsLoading}
-        chats={chats}
-        activeChat={activeChat}
-        setActiveChat={setActiveChat}
-        getChatAvatar={getChatAvatar}
-        getChatName={getChatName}
-        openProfile={() => setIsProfileModalOpen(true)}
-        onlineUsers={onlineUsers}
-        notifications={notifications}
-        setNotifications={setNotifications}
-      />
-      <ChatBox
-        activeChat={activeChat}
-        getChatAvatar={getChatAvatar}
-        getChatName={getChatName}
-        openChatInfo={openChatInfo}
-        isMessagesLoading={isMessagesLoading}
-        messages={messages}
-        currentUser={currentUser}
-        formatTime={formatTime}
-        isTyping={isTyping}
-        messagesEndRef={messagesEndRef}
-        sendMessage={sendMessage}
-        newMessage={newMessage}
-        setNewMessage={setNewMessage} 
-        typingHandler={typingHandler}
-        handleDeleteMessage={handleDeleteMessage} 
-        handleEditClick={handleEditClick} 
-        editingMessage={editingMessage} 
-        setEditingMessage={setEditingMessage} 
-        selectedFiles={selectedFiles}
-        setSelectedFiles={setSelectedFiles}
-        scrollToBottom={scrollToBottom}
-      />
+    <div className="flex h-[100dvh] w-full relative overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#111111] via-[#050505] to-[#000000] text-[#e0e0e0] font-mono antialiased selection:bg-[#b026ff]/30">
+      
+      {/* 🔥 MOBILE LAYOUT LOGIC 🔥 */}
+      {/* SIDEBAR: Hidden on mobile if a chat is active, always visible on desktop */}
+      <div className={`h-full flex-col shrink-0 border-r border-white/[0.05] ${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-[320px] lg:w-[380px]`}>
+        <Sidebar
+          currentUser={currentUser}
+          socketConnected={socketConnected}
+          handleLogout={handleLogout}
+          searchQuery={searchQuery}
+          handleSearch={handleSearch}
+          setSearchQuery={setSearchQuery}
+          isSearching={isSearching}
+          searchResults={searchResults}
+          accessChat={accessChat}
+          setIsGroupModalOpen={setIsGroupModalOpen}
+          isChatsLoading={isChatsLoading}
+          chats={chats}
+          activeChat={activeChat}
+          setActiveChat={setActiveChat}
+          getChatAvatar={getChatAvatar}
+          getChatName={getChatName}
+          openProfile={() => setIsProfileModalOpen(true)}
+          onlineUsers={onlineUsers}
+          notifications={notifications}
+          setNotifications={setNotifications}
+        />
+      </div>
 
+      {/* CHATBOX: Hidden on mobile if NO chat is active, always visible on desktop */}
+      <div className={`h-full flex-col flex-1 min-w-0 ${activeChat ? 'flex' : 'hidden md:flex'}`}>
+        <ChatBox
+          activeChat={activeChat}
+          getChatAvatar={getChatAvatar}
+          getChatName={getChatName}
+          openChatInfo={openChatInfo}
+          isMessagesLoading={isMessagesLoading}
+          messages={messages}
+          currentUser={currentUser}
+          formatTime={formatTime}
+          isTyping={isTyping}
+          messagesEndRef={messagesEndRef}
+          setActiveChat={setActiveChat}
+          sendMessage={sendMessage}
+          newMessage={newMessage}
+          setNewMessage={setNewMessage}
+          typingHandler={typingHandler}
+          handleDeleteMessage={handleDeleteMessage}
+          handleEditClick={handleEditClick}
+          editingMessage={editingMessage}
+          setEditingMessage={setEditingMessage}
+          selectedFiles={selectedFiles}
+          setSelectedFiles={setSelectedFiles}
+          scrollToBottom={scrollToBottom}
+        />
+      </div>
+
+      {/* MODALS */}
       <CreateGroup
         isOpen={isGroupModalOpen}
         onClose={() => setIsGroupModalOpen(false)}
@@ -380,7 +439,7 @@ const ChatPage = () => {
         setChats={setChats}
         setActiveChat={setActiveChat}
       />
-      
+
       <ChatSettings
         isOpen={isChatInfoModalOpen}
         onClose={() => setIsChatInfoModalOpen(false)}
@@ -390,8 +449,8 @@ const ChatPage = () => {
         setChats={setChats}
         currentUser={currentUser}
       />
-      
-      <UserProfile 
+
+      <UserProfile
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         currentUser={currentUser}

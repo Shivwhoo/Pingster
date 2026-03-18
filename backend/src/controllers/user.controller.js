@@ -213,9 +213,9 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-  const { email } = req.body;
+  const { email,username } = req.body;
 
-  if (!email) {
+  if (!email || !username) {
     throw new ApiError(400, "All feilds are required");
   }
 
@@ -224,6 +224,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     {
       $set: {
         email: email,
+        username:username
       },
     },
     { new: true },
