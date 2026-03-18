@@ -10,9 +10,11 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   pingTimeout: 60000,
   cors: {
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    origin: process.env.CORS_ORIGIN, // https://pingster-opal.vercel.app
+    methods: ["GET", "POST"],
     credentials: true,
   },
+  allowEIO3: true // Sometimes needed for compatibility
 });
 
 // 🔥 NAYA: Online users track karne ke liye array
