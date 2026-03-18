@@ -12,7 +12,7 @@ import ChatBox from "../components/chat/ChatBox";
 import Sidebar from "../components/chat/Sidebar";
 import UserProfile from "../components/modals/UserProfile";
 
-const ENDPOINT = "http://localhost:8000";
+const ENDPOINT = "https://pingster-tone.onrender.com";
 
 const ChatPage = () => {
   const { userInfo } = useSelector((state) => state.auth);
