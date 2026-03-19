@@ -59,8 +59,18 @@ const ChatPage = () => {
   const [notifications, setNotifications] = useState([]);
 
   const messagesEndRef = useRef(null);
-  const scrollToBottom = () =>
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+const scrollToBottom = () => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ 
+        behavior: "smooth", 
+        block: "end" 
+      });
+    }, 100);
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping, activeChat]);
 
   useEffect(() => {
     scrollToBottom();
