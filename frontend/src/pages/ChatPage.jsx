@@ -72,10 +72,6 @@ const scrollToBottom = () => {
     scrollToBottom();
   }, [messages, isTyping, activeChat]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
-
   // --- 1. SOCKET BOOTUP ---
   useEffect(() => {
     if (currentUser) {
