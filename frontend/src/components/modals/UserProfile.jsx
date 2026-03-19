@@ -1,10 +1,21 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, X, Camera, Lock, Loader2, Check, Shield, Trash2 } from "lucide-react"; 
+import {
+  User,
+  X,
+  Camera,
+  Lock,
+  Loader2,
+  Check,
+  Shield,
+  Trash2,
+} from "lucide-react";
 import api from "../../config/api";
 // Agar Redux me user update karne ka action hai, toh usko import karlena
 // import { updateCredentials } from '../../redux/slices/authSlice';
 import { useDispatch } from "react-redux";
+import toast from 'react-hot-toast';
+
 
 const UserProfile = ({ isOpen, onClose, currentUser }) => {
   const dispatch = useDispatch();
@@ -25,7 +36,7 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar);
   const [isAvatarUpdating, setIsAvatarUpdating] = useState(false);
-  
+
   // 🔥 NAYI STATE: Avatar Remove ke liye
   const [isAvatarRemoving, setIsAvatarRemoving] = useState(false);
 
@@ -37,13 +48,13 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
     try {
       setIsAvatarRemoving(true);
       // Backend route verify karlena (e.g., api.delete('/users/avatar'))
-      await api.delete("/users/avatar"); 
+      await api.delete("/users/avatar");
       setAvatarPreview("");
       setAvatarFile(null);
-      alert("Avatar purged successfully! (Syncing with Matrix...)");
+      toast.error("Avatar purged successfully! (Syncing with Matrix...)");
     } catch (error) {
       console.error(error);
-      alert(error.response?.data?.message || "Failed to purge avatar.");
+      toast.error(error.response?.data?.message || "Failed to purge avatar.");
     } finally {
       setIsAvatarRemoving(false);
     }
@@ -68,11 +79,13 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
       const { data } = await api.patch("/users/avatar", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      alert("Avatar Updated Successfully! (Refresh to see changes globally)");
+      toast.error(
+        "Avatar Updated Successfully! (Refresh to see changes globally)",
+      );
       setAvatarFile(null);
       // dispatch(updateCredentials(data.data)); // Redux update if you have it
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to update Avatar");
+      toast.error(error.response?.data?.message || "Failed to update Avatar");
     } finally {
       setIsAvatarUpdating(false);
     }
@@ -90,10 +103,10 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
         username,
         email,
       });
-      alert("Identity Updated Successfully!");
+      toast.error("Identity Updated Successfully!");
       // dispatch(updateCredentials(data.data));
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to update details");
+      toast.error(error.response?.data?.message || "Failed to update details");
     } finally {
       setIsDetailsUpdating(false);
     }
@@ -107,11 +120,11 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
     try {
       setIsPasswordUpdating(true);
       await api.post("/users/change-password", { oldPassword, newPassword });
-      alert("Security Key (Password) Updated Successfully!");
+      toast.error("Security Key (Password) Updated Successfully!");
       setOldPassword("");
       setNewPassword("");
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to change password");
+      toast.error(error.response?.data?.message || "Failed to change password");
     } finally {
       setIsPasswordUpdating(false);
     }
@@ -121,17 +134,23 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
           className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-md sm:p-4 font-mono selection:bg-[#b026ff]/30"
           onClick={onClose}
         >
           <motion.div
-            initial={{ scale: 0.95, y: 100 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 100 }} transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            initial={{ scale: 0.95, y: 100 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.95, y: 100 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="w-full max-w-md bg-[#050505] border border-white/10 rounded-t-3xl md:rounded-2xl shadow-[0_0_80px_rgba(57,255,20,0.1)] overflow-hidden max-h-[90vh] flex flex-col relative"
             onClick={(e) => e.stopPropagation()}
           >
-             {/* Background Grain */}
-             <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay z-0 rounded-t-3xl md:rounded-2xl"></div>
+            {/* Background Grain */}
+            <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay z-0 rounded-t-3xl md:rounded-2xl"></div>
 
             {/* Mobile Drag Indicator */}
             <div className="w-full flex justify-center pt-3 md:hidden absolute top-0 z-20">
@@ -139,10 +158,10 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
             </div>
 
             <div className="p-5 md:p-6 border-b border-white/[0.08] flex justify-between items-center bg-[#0a0a0a]/90 backdrop-blur-xl relative z-10 pt-8 md:pt-6 rounded-t-3xl md:rounded-2xl">
-               <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#39ff14]/30 to-transparent"></div>
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#39ff14]/30 to-transparent"></div>
               <h2 className="text-xs md:text-sm font-bold tracking-widest uppercase text-white flex items-center gap-2.5 drop-shadow-sm">
                 <span className="p-1.5 bg-[#39ff14]/10 rounded-lg border border-[#39ff14]/20">
-                   <User className="w-4 h-4 text-[#39ff14]" /> 
+                  <User className="w-4 h-4 text-[#39ff14]" />
                 </span>
                 Node_Identity
               </h2>
@@ -158,7 +177,7 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
               {/* --- AVATAR SECTION --- */}
               <div className="flex flex-col items-center space-y-4">
                 <div className="relative group">
-                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 bg-[#b026ff]/10 rounded-full blur-[20px] pointer-events-none"></div>
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 bg-[#b026ff]/10 rounded-full blur-[20px] pointer-events-none"></div>
                   <div className="w-24 h-24 md:w-28 md:h-28 rounded-full border-2 border-[#b026ff]/30 p-1.5 shadow-[0_0_30px_rgba(176,38,255,0.2)] overflow-hidden bg-black/50 relative z-10 transition-colors group-hover:border-[#b026ff]/60">
                     <img
                       src={
@@ -211,14 +230,18 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
                   </button>
                 )}
               </div>
-              
+
               <div className="h-px w-full bg-white/[0.05]"></div>
 
               {/* --- DETAILS SECTION --- */}
-              <form onSubmit={submitDetails} className="space-y-4 md:space-y-5 bg-black/40 p-4 md:p-5 border border-white/[0.05] rounded-2xl shadow-inner relative">
-                 <div className="absolute top-0 left-4 w-12 h-[1px] bg-[#b026ff]/30"></div>
+              <form
+                onSubmit={submitDetails}
+                className="space-y-4 md:space-y-5 bg-black/40 p-4 md:p-5 border border-white/[0.05] rounded-2xl shadow-inner relative"
+              >
+                <div className="absolute top-0 left-4 w-12 h-[1px] bg-[#b026ff]/30"></div>
                 <h3 className="text-[9px] md:text-[10px] text-gray-400 uppercase tracking-widest font-bold flex items-center gap-2">
-                  <User className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#b026ff]" /> Basic_Parameters
+                  <User className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#b026ff]" />{" "}
+                  Basic_Parameters
                 </h3>
                 <div className="space-y-1.5 md:space-y-2">
                   <label className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-widest ml-1">
@@ -260,10 +283,14 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
               </form>
 
               {/* --- PASSWORD SECTION --- */}
-              <form onSubmit={submitPassword} className="space-y-4 md:space-y-5 bg-black/40 p-4 md:p-5 border border-white/[0.05] rounded-2xl shadow-inner relative">
-                 <div className="absolute top-0 left-4 w-12 h-[1px] bg-[#39ff14]/30"></div>
+              <form
+                onSubmit={submitPassword}
+                className="space-y-4 md:space-y-5 bg-black/40 p-4 md:p-5 border border-white/[0.05] rounded-2xl shadow-inner relative"
+              >
+                <div className="absolute top-0 left-4 w-12 h-[1px] bg-[#39ff14]/30"></div>
                 <h3 className="text-[9px] md:text-[10px] text-gray-400 uppercase tracking-widest font-bold flex items-center gap-2">
-                  <Shield className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#39ff14]" /> Security_Keys
+                  <Shield className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#39ff14]" />{" "}
+                  Security_Keys
                 </h3>
                 <div className="space-y-1.5 md:space-y-2">
                   <label className="text-[9px] md:text-[10px] text-gray-500 uppercase tracking-widest ml-1">

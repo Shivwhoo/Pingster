@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Hash, X, Edit2, Loader2, Plus, LogOut as LeaveIcon ,Radio} from 'lucide-react';
 import api from '../../config/api';
-
+import toast from 'react-hot-toast';
 const ChatSettings = ({ isOpen, onClose, activeChat, setActiveChat, chats, setChats, currentUser }) => {
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
@@ -53,11 +53,11 @@ const ChatSettings = ({ isOpen, onClose, activeChat, setActiveChat, chats, setCh
 
   const handleAddUserToGroup = async (userToAdd) => {
     if (activeChat.users.find((u) => u._id === userToAdd._id)) {
-      return alert("Node already exists in this cluster!");
+      return toast.error("Node already exists in this cluster!");
     }
     const adminId = activeChat.groupAdmin._id || activeChat.groupAdmin;
     if (adminId !== currentUser._id) {
-      return alert("Access Denied: Only Admins can inject nodes!");
+      return toast.error("Access Denied: Only Admins can inject nodes!");
     }
 
     try {
@@ -70,7 +70,7 @@ const ChatSettings = ({ isOpen, onClose, activeChat, setActiveChat, chats, setCh
       setActiveChat(updatedChat);
       setChats(chats.map(c => c._id === updatedChat._id ? updatedChat : c));
     } catch (error) {
-      alert(error.response?.data?.message || "Error adding user!");
+      toast.error(error.response?.data?.message || "Error adding user!");
     } finally {
       setIsManagingGroup(false);
     }
@@ -79,7 +79,7 @@ const ChatSettings = ({ isOpen, onClose, activeChat, setActiveChat, chats, setCh
   const handleRemoveFromGroup = async (userToRemove) => {
     const adminId = activeChat.groupAdmin._id || activeChat.groupAdmin;
     if (adminId !== currentUser._id && userToRemove._id !== currentUser._id) {
-      return alert("Only Group Admins can remove members!");
+      return toast.error("Only Group Admins can remove members!");
     }
     try {
       setIsManagingGroup(true);

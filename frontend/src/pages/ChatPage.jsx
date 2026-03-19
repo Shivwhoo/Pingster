@@ -11,6 +11,8 @@ import ChatBox from "../components/chat/ChatBox";
 
 import Sidebar from "../components/chat/Sidebar";
 import UserProfile from "../components/modals/UserProfile";
+import toast from 'react-hot-toast';
+
 
 const ENDPOINT = "https://pingster-tone.onrender.com";
 
@@ -81,7 +83,9 @@ const ChatPage = () => {
       });
 
       socket.current.on("message edited", (editedMsg) => {
-        setMessages((prev) => prev.map((m) => m._id === editedMsg._id ? editedMsg : m));
+        setMessages((prev) =>
+          prev.map((m) => (m._id === editedMsg._id ? editedMsg : m)),
+        );
       });
 
       socket.current.on("messages read", ({ chatId, userId }) => {
@@ -172,11 +176,14 @@ const ChatPage = () => {
   useEffect(() => {
     if (!socket.current) return;
     const messageHandler = async (newMessageReceived) => {
-      
       // Part A: Notification & Messages logic
       if (!activeChat || activeChat._id !== newMessageReceived.chat._id) {
-        const audio = new Audio("https://cdn.pixabay.com/download/audio/2021/08/09/audio_82e21b0231.mp3");
-        audio.play().catch((e) => console.log("Audio play blocked by browser:", e));
+        const audio = new Audio(
+          "https://cdn.pixabay.com/download/audio/2021/08/09/audio_82e21b0231.mp3",
+        );
+        audio
+          .play()
+          .catch((e) => console.log("Audio play blocked by browser:", e));
         setNotifications((prev) => [newMessageReceived, ...prev]);
       } else {
         setMessages((prev) => [...prev, newMessageReceived]);
@@ -186,19 +193,29 @@ const ChatPage = () => {
             chatId: activeChat._id,
             userId: currentUser._id,
           });
-        } catch (err) { console.error(err); }
+        } catch (err) {
+          console.error(err);
+        }
       }
 
       // 🔥 Part B: NAYA LOGIC - Update Sidebar Chats Dynamically 🔥
       setChats((prevChats) => {
-        const chatExists = prevChats.some(c => c._id === newMessageReceived.chat._id);
+        const chatExists = prevChats.some(
+          (c) => c._id === newMessageReceived.chat._id,
+        );
         if (chatExists) {
           // Chat ko update karo aur top par laao
-          let updatedChats = prevChats.map(c => 
-            c._id === newMessageReceived.chat._id ? { ...c, latestMessage: newMessageReceived } : c
+          let updatedChats = prevChats.map((c) =>
+            c._id === newMessageReceived.chat._id
+              ? { ...c, latestMessage: newMessageReceived }
+              : c,
           );
-          const chatToMove = updatedChats.find(c => c._id === newMessageReceived.chat._id);
-          updatedChats = updatedChats.filter(c => c._id !== newMessageReceived.chat._id);
+          const chatToMove = updatedChats.find(
+            (c) => c._id === newMessageReceived.chat._id,
+          );
+          updatedChats = updatedChats.filter(
+            (c) => c._id !== newMessageReceived.chat._id,
+          );
           return [chatToMove, ...updatedChats];
         } else {
           // Agar naya chat create hua hai to list me daalo
@@ -209,7 +226,7 @@ const ChatPage = () => {
 
     socket.current.on("message received", messageHandler);
     return () => socket.current.off("message received", messageHandler);
-  }, [activeChat]); 
+  }, [activeChat]);
 
   // --- 5. TYPING HANDLER ---
   const typingHandler = (e) => {
@@ -237,25 +254,33 @@ const ChatPage = () => {
     try {
       if (editingMessage) {
         // 1. Backend par update bhejo
-        const { data } = await api.patch(`/messages/${editingMessage._id}/edit`, {
-          content: newMessage,
-        });
+        const { data } = await api.patch(
+          `/messages/${editingMessage._id}/edit`,
+          {
+            content: newMessage,
+          },
+        );
         const updatedMsg = data.data || data;
 
         // 2. Chat window update karo (Functional approach se stale state issue nahi hoga)
         setMessages((prevMessages) =>
-          prevMessages.map((m) => (m._id === editingMessage._id ? updatedMsg : m))
+          prevMessages.map((m) =>
+            m._id === editingMessage._id ? updatedMsg : m,
+          ),
         );
 
         // 3. Sidebar (Chats list) update karo
         setChats((prevChats) =>
           prevChats.map((c) => {
             // Agar yeh message is chat ka sabse latest message tha, toh sidebar mein bhi text badal do
-            if (c._id === activeChat._id && c.latestMessage?._id === updatedMsg._id) {
+            if (
+              c._id === activeChat._id &&
+              c.latestMessage?._id === updatedMsg._id
+            ) {
               return { ...c, latestMessage: updatedMsg };
             }
             return c;
-          })
+          }),
         );
 
         // 4. Dusre user ko socket ke through batao
@@ -292,7 +317,7 @@ const ChatPage = () => {
         // Sidebar update after sending
         setChats((prevChats) => {
           let updatedChats = prevChats.map((c) =>
-            c._id === activeChat._id ? { ...c, latestMessage: sentMsg } : c
+            c._id === activeChat._id ? { ...c, latestMessage: sentMsg } : c,
           );
           const movedChat = updatedChats.find((c) => c._id === activeChat._id);
           updatedChats = updatedChats.filter((c) => c._id !== activeChat._id);
@@ -301,7 +326,7 @@ const ChatPage = () => {
       }
     } catch (error) {
       console.error("Transmission failed", error);
-      alert("Payload delivery failed. Check network.");
+      toast.error("Payload delivery failed. Check network.");
     }
   };
 
@@ -374,16 +399,16 @@ const ChatPage = () => {
   const handleDeleteMessage = async (messageId) => {
     if (!window.confirm("Purge this payload permanently?")) return;
     try {
-      const msgToDelete = messages.find(m => m._id === messageId); 
+      const msgToDelete = messages.find((m) => m._id === messageId);
       await api.delete(`/messages/${messageId}`);
-      
+
       setMessages(messages.filter((m) => m._id !== messageId));
-      
+
       if (socket.current && msgToDelete) {
         socket.current.emit("message deleted", msgToDelete);
       }
     } catch (error) {
-      alert("Purge failed!");
+      toast.error("Purge failed!");
     }
   };
 
@@ -394,10 +419,11 @@ const ChatPage = () => {
 
   return (
     <div className="flex h-[100dvh] w-full relative overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#111111] via-[#050505] to-[#000000] text-[#e0e0e0] font-mono antialiased selection:bg-[#b026ff]/30">
-      
       {/* 🔥 MOBILE LAYOUT LOGIC 🔥 */}
       {/* SIDEBAR: Hidden on mobile if a chat is active, always visible on desktop */}
-      <div className={`h-full flex-col shrink-0 border-r border-white/[0.05] ${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-[320px] lg:w-[380px]`}>
+      <div
+        className={`h-full flex-col shrink-0 border-r border-white/[0.05] ${activeChat ? "hidden md:flex" : "flex"} w-full md:w-[320px] lg:w-[380px]`}
+      >
         <Sidebar
           currentUser={currentUser}
           socketConnected={socketConnected}
@@ -423,7 +449,9 @@ const ChatPage = () => {
       </div>
 
       {/* CHATBOX: Hidden on mobile if NO chat is active, always visible on desktop */}
-      <div className={`h-full flex-col flex-1 min-w-0 ${activeChat ? 'flex' : 'hidden md:flex'}`}>
+      <div
+        className={`h-full flex-col flex-1 min-w-0 ${activeChat ? "flex" : "hidden md:flex"}`}
+      >
         <ChatBox
           activeChat={activeChat}
           getChatAvatar={getChatAvatar}
