@@ -237,7 +237,7 @@ const ChatPage = () => {
     try {
       if (editingMessage) {
         // 1. Backend par update bhejo
-        const { data } = await api.patch(`/${editingMessage._id}/edit`, {
+        const { data } = await api.patch(`/messages/${editingMessage._id}/edit`, {
           content: newMessage,
         });
         const updatedMsg = data.data || data;
