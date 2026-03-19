@@ -236,18 +236,35 @@ const ChatPage = () => {
 
     try {
       if (editingMessage) {
+        // 1. Backend par update bhejo
         const { data } = await api.put(`/messages/${editingMessage._id}`, {
           content: newMessage,
         });
-        const updatedMsg = data.data || data; // Extract updated message
-        setMessages(messages.map((m) => (m._id === editingMessage._id ? updatedMsg : m)));
-        
-        // 🔥 NAYA: Emit Edit to other user
+        const updatedMsg = data.data || data;
+
+        // 2. Chat window update karo (Functional approach se stale state issue nahi hoga)
+        setMessages((prevMessages) =>
+          prevMessages.map((m) => (m._id === editingMessage._id ? updatedMsg : m))
+        );
+
+        // 3. Sidebar (Chats list) update karo
+        setChats((prevChats) =>
+          prevChats.map((c) => {
+            // Agar yeh message is chat ka sabse latest message tha, toh sidebar mein bhi text badal do
+            if (c._id === activeChat._id && c.latestMessage?._id === updatedMsg._id) {
+              return { ...c, latestMessage: updatedMsg };
+            }
+            return c;
+          })
+        );
+
+        // 4. Dusre user ko socket ke through batao
         if (socket.current) socket.current.emit("message edited", updatedMsg);
-        
+
         setEditingMessage(null);
         setNewMessage("");
       } else {
+        // --- NAYA MESSAGE BHEJNE WALA LOGIC (Same as before) ---
         let dataToSend;
         let headers = {};
 
@@ -273,10 +290,12 @@ const ChatPage = () => {
         if (socket.current) socket.current.emit("new message", sentMsg);
 
         // Sidebar update after sending
-        setChats((prev) => {
-          let updatedChats = prev.map(c => c._id === activeChat._id ? { ...c, latestMessage: sentMsg } : c);
-          const movedChat = updatedChats.find(c => c._id === activeChat._id);
-          updatedChats = updatedChats.filter(c => c._id !== activeChat._id);
+        setChats((prevChats) => {
+          let updatedChats = prevChats.map((c) =>
+            c._id === activeChat._id ? { ...c, latestMessage: sentMsg } : c
+          );
+          const movedChat = updatedChats.find((c) => c._id === activeChat._id);
+          updatedChats = updatedChats.filter((c) => c._id !== activeChat._id);
           return [movedChat, ...updatedChats];
         });
       }
