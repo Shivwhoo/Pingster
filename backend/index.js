@@ -10,7 +10,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   pingTimeout: 60000,
   cors: {
-    origin: process.env.CORS_ORIGIN, // https://pingster-opal.vercel.app
+    origin: process.env.CORS_ORIGIN , // https://pingster-opal.vercel.app
     methods: ["GET", "POST"],
     credentials: true,
   },
