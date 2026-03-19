@@ -51,7 +51,7 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
       await api.delete("/users/avatar");
       setAvatarPreview("");
       setAvatarFile(null);
-      toast.error("Avatar purged successfully! (Syncing with Matrix...)");
+      toast("Avatar purged successfully! (Syncing with Matrix...)");
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || "Failed to purge avatar.");
@@ -79,7 +79,7 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
       const { data } = await api.patch("/users/avatar", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      toast.error(
+      toast(
         "Avatar Updated Successfully! (Refresh to see changes globally)",
       );
       setAvatarFile(null);
@@ -103,7 +103,7 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
         username,
         email,
       });
-      toast.error("Identity Updated Successfully!");
+      toast("Identity Updated Successfully!");
       // dispatch(updateCredentials(data.data));
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to update details");
@@ -120,7 +120,7 @@ const UserProfile = ({ isOpen, onClose, currentUser }) => {
     try {
       setIsPasswordUpdating(true);
       await api.post("/users/change-password", { oldPassword, newPassword });
-      toast.error("Security Key (Password) Updated Successfully!");
+      toast("Security Key (Password) Updated Successfully!");
       setOldPassword("");
       setNewPassword("");
     } catch (error) {
