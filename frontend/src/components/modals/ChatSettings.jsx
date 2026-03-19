@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Hash, X, Edit2, Loader2, Plus, LogOut as LeaveIcon } from 'lucide-react';
+import { Hash, X, Edit2, Loader2, Plus, LogOut as LeaveIcon ,Radio} from 'lucide-react';
 import api from '../../config/api';
 
 const ChatSettings = ({ isOpen, onClose, activeChat, setActiveChat, chats, setChats, currentUser }) => {
