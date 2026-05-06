@@ -18,7 +18,6 @@ if (!content && (!req.files || req.files.length === 0)) {
         throw new ApiError(400, "Chat ID is required");
     }
 
-    // `var` hatakar `const` use kiya. Speling mistake thik ki (newMesssage -> newMessage)
     const newMessage = {
         sender: req.user._id,
         chat: chatId

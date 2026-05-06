@@ -23,6 +23,7 @@ const generateAccessAndRefreshToken = async (userId) => {
   }
 };
 
+
 const registerUser = asyncHandler(async (req, res) => {
   const { email, username, password } = req.body;
 
@@ -77,7 +78,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ email });
 
-  if (!user) {
+  if (!user) {/7/
     throw new ApiError(404, "User does not exist");
   }
 
